@@ -1,0 +1,24 @@
+# DataSource Config
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    schema: classpath:db/schema-h2.sql
+    data: classpath:db/data-h2.sql
+    url: jdbc:h2:mem:testdb
+    username: bcc
+    password: 2vx2zm+2eb
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+
+# NCL DIR Config
+onlinencl:
+  workingDir: /work2/theropod/BCC/Operational_Prediction/Result/
+  rootDir: /work2/theropod/BCC/Operational_Prediction/

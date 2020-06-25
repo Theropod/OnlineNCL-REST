@@ -17,7 +17,7 @@ import java.util.ArrayList;
 
 @RestController
 @Api(tags = "NCL Wrapper")
-@RequestMapping("/online-ncl/ncl-wrapper")
+@RequestMapping("/ncl-wrapper")
 public class NCLWrapperController {
 
     // NCL执行路径

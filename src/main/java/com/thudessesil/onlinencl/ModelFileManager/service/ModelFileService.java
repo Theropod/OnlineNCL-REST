@@ -20,4 +20,5 @@ public interface ModelFileService extends IService<ModelFile> {
 
     List findDistinctByColumnValues(String columnName, String model, String startTime, String variableName);
 
+    String scanFiles(String path);
 }

@@ -9,7 +9,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -23,6 +28,8 @@ import java.util.*;
 public class ModelFileServiceImpl extends ServiceImpl<ModelFileMapper, ModelFile> implements ModelFileService {
     @Autowired
     private ModelFileService modelFileService;
+    @Autowired
+    private ModelFileMapper modelFileMapper;
 
     // find record by model and string and variable name
     public Collection findByColumnValues(String model, String startTime, String variableName){
@@ -46,6 +53,33 @@ public class ModelFileServiceImpl extends ServiceImpl<ModelFileMapper, ModelFile
                 .like(StringUtils.isNotBlank(variableName),"variable_name", variableName);
 
         return modelFileService.listObjs(queryWrapper);
+    }
+
+    // scan file info based on input path
+    public String scanFiles(String dir){
+        // remove all records in db
+        modelFileService.remove(null);
+        try (Stream<Path> paths = Files.walk(Paths.get(dir))) {
+            // find all nc file and save to db
+            paths.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".nc"))
+                    .forEach(path -> {
+                        ModelFile modelfile = new ModelFile();
+                        modelfile.setFilename(path.getFileName().toString());
+                        modelfile.setModel(path.getParent().getParent().getParent().getFileName().toString());
+                        modelfile.setStartTime(path.getParent().getFileName().toString());
+                        modelfile.setVariableName(path.getParent().getParent().getFileName().toString());
+                        modelfile.setPath(path.toString());
+                        modelfile.setFileInfo("fileInfo");
+                        modelFileService.save(modelfile);
+                    });
+            // return numbers of files scanned
+            List<ModelFile> modelList = modelFileMapper.selectList(null);
+            return modelList.size() + "Files scanned!";
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "failed";
+        }
     }
 
 }

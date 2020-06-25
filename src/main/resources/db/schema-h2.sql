@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS model_file;
 
 CREATE TABLE model_file
 (
-    id BIGINT(20) NOT NULL COMMENT 'primary key id',
+    id BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key id',
     filename VARCHAR NULL DEFAULT NULL COMMENT 'entity output filename',
     model VARCHAR NULL DEFAULT NULL COMMENT 'entity name',
     start_time VARCHAR NULL DEFAULT NULL COMMENT 'entity predict start time',

@@ -11,7 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 
 @RunWith(SpringRunner.class)
@@ -37,7 +42,7 @@ public class ModelFileManagerTest {
     }
 
     @Test
-    public void findByColumnValues(){
+    public void findByColumnValues() {
         // MyBatis Plus provides two ways for CRUD: Service CRUD Interface(Extends IService) and Mapper CRUD interface(Extends BaseMapper)
         // Service CRUD is on service level(provides batch and Encapsulated methods)
         // Mapper CRUD is on dao level which is more basic
@@ -57,21 +62,22 @@ public class ModelFileManagerTest {
     }
 
     // helper function of findDistinctByColumnValues
-    public void findAllColumnDistinctByColumnValues(String model, String startTime, String variableName){
+    public void findAllColumnDistinctByColumnValues(String model, String startTime, String variableName) {
         QueryWrapper<ModelFile> queryWrapper = new QueryWrapper<>();
         // distinct values of these columns:
-        for(String columnName : new ArrayList<>( Arrays.asList("model", "start_time", "variable_name"))){
+        for (String columnName : new ArrayList<>(Arrays.asList("model", "start_time", "variable_name"))) {
             queryWrapper
                     .select("distinct " + columnName)
-                    .like(StringUtils.isNotBlank(model),"model", model)
-                    .like(StringUtils.isNotBlank(startTime),"start_time", startTime)
-                    .like(StringUtils.isNotBlank(variableName),"variable_name", variableName);
+                    .like(StringUtils.isNotBlank(model), "model", model)
+                    .like(StringUtils.isNotBlank(startTime), "start_time", startTime)
+                    .like(StringUtils.isNotBlank(variableName), "variable_name", variableName);
 
             System.out.println(columnName + ":" + modelFileService.listObjs(queryWrapper));
         }
     }
+
     @Test
-    public void findDistinctByDifferentFilter(){
+    public void findDistinctByDifferentFilter() {
         // select distinct entity/start_time/variable_name from model_file where entity= and start_time= and variable_name =
         // criteria overlooked if parameter is null
         // use return value as filters to find modelfiles
@@ -79,19 +85,57 @@ public class ModelFileManagerTest {
         // no filter selected
         System.out.println("========================");
         System.out.println("no filter.");
-        findAllColumnDistinctByColumnValues("","","");
+        findAllColumnDistinctByColumnValues("", "", "");
         // 1 filter selected
         System.out.println("========================");
         System.out.println("1 filter. model = S2S_T226");
-        findAllColumnDistinctByColumnValues("S2S_T226","","");
+        findAllColumnDistinctByColumnValues("S2S_T226", "", "");
         // 2 filters selected
         System.out.println("========================");
         System.out.println("2 filters. model = S2S_T226, start_time = 20200406");
-        findAllColumnDistinctByColumnValues("S2S_T226","20200406","");
+        findAllColumnDistinctByColumnValues("S2S_T226", "20200406", "");
         // 3 filters selected
         System.out.println("========================");
         System.out.println("3 filters. model = S2S_T226, start_time = 20200406, variableName = PRECT ");
-        findAllColumnDistinctByColumnValues("S2S_T226","20200406","PRECT");
+        findAllColumnDistinctByColumnValues("S2S_T226", "20200406", "PRECT");
+    }
+
+    @Test
+    public void ScanFiles() {
+        System.out.println("============original============");
+        List<ModelFile> modelList = modelFileMapper.selectList(null);
+        modelList.forEach(System.out::println);
+
+//        QueryWrapper<ModelFile> queryWrapper = new QueryWrapper<>();
+        modelFileService.remove(null);
+        List<ModelFile> modelList2 = modelFileMapper.selectList(null);
+        System.out.println("============remove============");
+        modelList2.forEach(System.out::println);
+
+        try (Stream<Path> paths = Files.walk(Paths.get("D:\\WorkSpace\\NetCDF_Test_Data\\BCC\\Operational_Prediction\\"))) {
+
+            paths.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".nc"))
+                    .forEach(path -> {
+                        ModelFile modelfile = new ModelFile();
+                        modelfile.setFilename(path.getFileName().toString());
+                        modelfile.setModel(path.getParent().getParent().getParent().getFileName().toString());
+                        modelfile.setStartTime(path.getParent().getFileName().toString());
+                        modelfile.setVariableName(path.getParent().getParent().getFileName().toString());
+                        modelfile.setPath(path.toString());
+                        modelfile.setFileInfo("fileinfo");
+                        modelFileService.save(modelfile);
+//                        modelFileMapper.insert(modelfile);
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("============scan============");
+        List<ModelFile> modelList3 = modelFileMapper.selectList(null);
+        modelList3.forEach(System.out::println);
+        System.out.println(modelList3.size());
+
     }
 
 }
